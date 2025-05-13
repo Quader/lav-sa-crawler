@@ -1,0 +1,9 @@
+node_modules
+.env
+package-lock.json # Nicht notwendig, wenn du Yarn verwendest
+yarn.lock       # Nicht notwendig, wenn du npm verwendest
+.DS_Store       # macOS spezifisch
+Thumbs.db       # Windows spezifisch
+.vscode/         # VS Code spezifische Einstellungen
+.idea/           # IntelliJ IDEA spezifische Einstellungen
+*.log            # Log-Dateien

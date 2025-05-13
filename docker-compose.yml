@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  crawler:
+    build: .
+    restart: always
+    volumes:
+      - crawler_data:/app
+
+volumes:
+  crawler_data:
