@@ -41,16 +41,23 @@ async function checkFischerpruefung() {
 
         let discordMessage = '';
 
-        if (newAppointments.length > 0) {
-            discordMessage += `🎣 **Neue Fischerprüfung-Termine gefunden!**\n\n${newAppointments.map(t =>
-                `📅 **Termin:** ${t.termin}\n🏢 **Prüfungsstelle:** ${t.pruefungsstelle}\n📍 **Ort:** ${t.pruefungsort} (${t.landkreis})\n\n🔗 **Link:** ${t.url}`
-            ).join('\n\n')}\n\n`;
+        // Hilfsfunktion zum Formatieren eines einzelnen Termins mit Rahmen
+        const formatAppointment = (appointment, isNew = false) => {
+            const emoji = isNew ? '🆕' : '🎣';
+            return `\`\`\`\n┌─────────────────────────────────────────\n│ ${emoji} Fischerprüfungstermin\n├─────────────────────────────────────────\n│ 📅 Termin: ${appointment.termin}\n│ 🏢 Prüfungsstelle: ${appointment.pruefungsstelle}\n│ 📍 Ort: ${appointment.pruefungsort} (${appointment.landkreis})\n│ 🔗 Link: ${appointment.url}\n└─────────────────────────────────────────\n\`\`\``;
+        };
 
+        if (newAppointments.length > 0) {
+            discordMessage += `🎣 **Neue Fischerprüfung-Termine gefunden!**\n\n`;
+            
+            // Neue Termine mit speziellem Format und "Neu" Kennzeichnung
+            discordMessage += newAppointments.map(t => formatAppointment(t, true)).join('\n');
+            
             for (const newAppointment of newAppointments) {
                 await markAsNotified(newAppointment.id, knownAppointments);
             }
         } else {
-            discordMessage += 'ℹ️ Keine neuen Fischerprüfung-Termine gefunden.\n\n';
+            discordMessage += 'ℹ️ **Keine neuen Fischerprüfung-Termine gefunden.**\n\n';
             
             // Zeigt die letzten beiden Termine an, wenn keine neuen gefunden wurden
             const lastTwoAppointments = [...fetchedAppointments]
@@ -63,17 +70,15 @@ async function checkFischerpruefung() {
                 .slice(0, 2);
                 
             if (lastTwoAppointments.length > 0) {
-                discordMessage += `**Aktuelle Termine zur Information:**\n\n${lastTwoAppointments.map(t =>
-                    `📅 **Termin:** ${t.termin}\n🏢 **Prüfungsstelle:** ${t.pruefungsstelle}\n📍 **Ort:** ${t.pruefungsort} (${t.landkreis})\n\n🔗 **Link:** ${t.url}`
-                ).join('\n\n')}\n\n`;
+                discordMessage += `**Aktuelle Termine zur Information:**\n\n`;
+                discordMessage += lastTwoAppointments.map(t => formatAppointment(t)).join('\n');
+                discordMessage += '\n\n';
             }
         }
 
         if (alreadyNotifiedAppointments.length > 0) {
-            discordMessage += `**Bereits gemeldete Termine:**\n\n${alreadyNotifiedAppointments.map(t =>
-                `📅 **Termin:** ${t.termin}\n🏢 **Prüfungsstelle:** ${t.pruefungsstelle}\n📍 **Ort:** ${t.pruefungsort} (${t.landkreis})\n\n🔗 **Link:** ${t.url}`
-            ).join('\n\n')}`;
-            
+            discordMessage += `**Bereits gemeldete Termine:**\n\n`;
+            discordMessage += alreadyNotifiedAppointments.map(t => formatAppointment(t)).join('\n');
         } else {
             log('ℹ️ Keine neuen Termine und keine bereits gemeldeten Termine gefunden.');
         }
