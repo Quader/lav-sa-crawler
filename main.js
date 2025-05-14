@@ -77,10 +77,19 @@ async function checkFischerpruefung() {
                 });
             }
             
-            // Add already notified appointments, if any
+            // Only show last 2 most recent notified appointments
             if (alreadyNotifiedAppointments.length > 0) {
-                discordContent += `\n\n ### Bereits gemeldete Termine:`;
-                alreadyNotifiedAppointments.forEach(appointment => {
+                // Sort by notifiedAt date, most recent first
+                const sortedNotifiedAppointments = [...alreadyNotifiedAppointments]
+                    .sort((a, b) => {
+                        const dateA = a.notifiedAt ? new Date(a.notifiedAt) : new Date(0);
+                        const dateB = b.notifiedAt ? new Date(b.notifiedAt) : new Date(0);
+                        return dateB - dateA;
+                    })
+                    .slice(0, 2); // Take only 2 most recent
+                
+                discordContent += `\n\n ### Letzte gemeldete Termine:`;
+                sortedNotifiedAppointments.forEach(appointment => {
                     discordEmbeds.push(createAppointmentEmbed(appointment, false, 'default'));
                 });
             }
