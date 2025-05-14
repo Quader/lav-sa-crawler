@@ -51,6 +51,22 @@ async function checkFischerpruefung() {
             }
         } else {
             discordMessage += 'ℹ️ Keine neuen Fischerprüfung-Termine gefunden.\n\n';
+            
+            // Zeigt die letzten beiden Termine an, wenn keine neuen gefunden wurden
+            const lastTwoAppointments = [...fetchedAppointments]
+                .sort((a, b) => {
+                    // Konvertiere deutsche Datumsformate (DD.MM.YYYY) zu Date-Objekten für den Vergleich
+                    const dateA = a.termin.split('.').reverse().join('-');
+                    const dateB = b.termin.split('.').reverse().join('-');
+                    return new Date(dateB) - new Date(dateA);
+                })
+                .slice(0, 2);
+                
+            if (lastTwoAppointments.length > 0) {
+                discordMessage += `**Aktuelle Termine zur Information:**\n\n${lastTwoAppointments.map(t =>
+                    `📅 **Termin:** ${t.termin}\n🏢 **Prüfungsstelle:** ${t.pruefungsstelle}\n📍 **Ort:** ${t.pruefungsort} (${t.landkreis})\n\n🔗 **Link:** ${t.url}`
+                ).join('\n\n')}\n\n`;
+            }
         }
 
         if (alreadyNotifiedAppointments.length > 0) {
