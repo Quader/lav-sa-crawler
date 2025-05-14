@@ -73,7 +73,7 @@ async function checkFischerpruefung() {
             if (lastTwoAppointments.length > 0) {
                 discordContent += '\n\nAktuelle Termine zur Information:';
                 lastTwoAppointments.forEach(appointment => {
-                    discordEmbeds.push(createAppointmentEmbed(appointment, false, '5865f2'));
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 0x5865F2));
                 });
             }
             
@@ -81,7 +81,7 @@ async function checkFischerpruefung() {
             if (alreadyNotifiedAppointments.length > 0) {
                 discordContent += '\n\nBereits gemeldete Termine:';
                 alreadyNotifiedAppointments.forEach(appointment => {
-                    discordEmbeds.push(createAppointmentEmbed(appointment, false, '808080'));
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 0x808080));
                 });
             }
         }

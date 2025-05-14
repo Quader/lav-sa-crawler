@@ -35,6 +35,13 @@ async function sendDiscordAlert(content, embeds = []) {
             payload.embeds = embeds;
         }
 
+        // Log the payload for debugging (sensitive data sanitized)
+        log(`Sending payload to Discord: ${JSON.stringify({
+            ...payload,
+            content: payload.content ? 'Content is present' : 'No content',
+            embeds: payload.embeds ? `${payload.embeds.length} embeds` : 'No embeds'
+        })}`);
+
         // Sende direkt an Discord-Webhook
         const response = await fetch(DISCORD_WEBHOOK_URL, {
             method: 'POST',
@@ -45,7 +52,8 @@ async function sendDiscordAlert(content, embeds = []) {
         });
 
         if (!response.ok) {
-            throw new Error(`Discord API responded with status: ${response.status}`);
+            const errorDetails = await response.text().catch(() => 'Could not read error details');
+            throw new Error(`Discord API responded with status: ${response.status}, details: ${errorDetails}`);
         }
         
         log('✅ Discord-Benachrichtigung erfolgreich gesendet.');
@@ -61,15 +69,16 @@ async function sendDiscordAlert(content, embeds = []) {
  * 
  * @param {Object} appointment Der Termin
  * @param {boolean} isNew Ob es sich um einen neuen Termin handelt
- * @param {string} [color] Die Farbe des Embeds (Hex-Code ohne #)
+ * @param {string|number} [color] Die Farbe des Embeds (entweder als Dezimalzahl oder als Hex-String ohne #)
  * @returns {Object} Discord Embed Objekt
  */
-function createAppointmentEmbed(appointment, isNew = false, color = '0099ff') {
+function createAppointmentEmbed(appointment, isNew = false, color = 0x0099ff) {
     const emoji = isNew ? '🆕' : '🎣';
     const title = `${emoji} Fischerprüfungstermin ${isNew ? '(NEU)' : ''}`;
     
-    // Für neue Termine eine andere Farbe verwenden
-    const embedColor = isNew ? 'e74c3c' : color;
+    // Für neue Termine eine andere Farbe verwenden (rot für neue Termine)
+    // Discord erwartet die Farbe als dezimale Zahl, nicht als Hex-String
+    const embedColor = isNew ? 0xE74C3C : color;
     
     return {
         title: title,
@@ -78,17 +87,19 @@ function createAppointmentEmbed(appointment, isNew = false, color = '0099ff') {
         fields: [
             {
                 name: '📅 Termin',
-                value: appointment.termin,
+                value: appointment.termin || 'Kein Datum angegeben',
                 inline: true
             },
             {
                 name: '🏢 Prüfungsstelle',
-                value: appointment.pruefungsstelle,
+                value: appointment.pruefungsstelle || 'Keine Angabe',
                 inline: true
             },
             {
                 name: '📍 Ort',
-                value: `${appointment.pruefungsort} (${appointment.landkreis})`,
+                value: appointment.pruefungsort ? 
+                       `${appointment.pruefungsort}${appointment.landkreis ? ` (${appointment.landkreis})` : ''}` :
+                       'Keine Ortsangabe',
                 inline: true
             }
         ],
