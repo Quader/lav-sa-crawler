@@ -4,7 +4,13 @@ services:
     build: .
     restart: always
     volumes:
-      - crawler_data:/app
+      - crawler_data:/app/data
+    networks:
+      - app-network
 
 volumes:
   crawler_data:
+
+networks:
+  app-network:
+    driver: bridge

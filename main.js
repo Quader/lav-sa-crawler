@@ -8,12 +8,14 @@ import {
     DISCORD_COLORS 
 } from './modules/discord/discordNotifier.js';
 import {
-    ensureDataFile,
+    initializeAppointmentsCollection,
     loadKnownAppointments,
-    saveKnownAppointments,
+    saveAppointments,
     findNewAppointments,
-    markAsNotified
-} from './modules/data/appointmentStorage.js';
+    markAsNotified,
+    getNotifiedAppointments,
+    getMostRecentAppointments
+} from './modules/data/nedbAppointmentStorage.js';
 import { log } from './modules/logger/logger.js';
 
 const EXAM_TYPE_ID = 1; // Replace with the actual fishing exam ID
@@ -21,7 +23,7 @@ const LINK_URL = process.env.LINK_URL;
 
 async function checkFischerpruefung() {
     try {
-        await ensureDataFile();
+        await initializeAppointmentsCollection();
         const knownAppointments = await loadKnownAppointments();
         const fetchedRawData = await fetchExamData();
 
@@ -41,8 +43,8 @@ async function checkFischerpruefung() {
                 url: LINK_URL + `${item.id}`
             }));
 
-        const newAppointments = await findNewAppointments(fetchedAppointments, knownAppointments);
-        const alreadyNotifiedAppointments = await knownAppointments.filter(k => k.notified);
+        const newAppointments = await findNewAppointments(fetchedAppointments);
+        const alreadyNotifiedAppointments = await getNotifiedAppointments();
 
         // Discord message preparation
         let discordContent = '';
@@ -59,21 +61,14 @@ async function checkFischerpruefung() {
             
             // Mark the new appointments as notified
             for (const newAppointment of newAppointments) {
-                await markAsNotified(newAppointment.id, knownAppointments);
+                await markAsNotified(newAppointment.id);
             }
         } else {
             // No new appointments found
             discordContent = `\n\n\n\n ### ℹ️ Keine neuen Termine gefunden`;
             
             // Show the last two appointments when no new ones were found
-            const lastTwoAppointments = [...fetchedAppointments]
-                .sort((a, b) => {
-                    // Convert German date formats (DD.MM.YYYY) to Date objects for comparison
-                    const dateA = a.termin.split('.').reverse().join('-');
-                    const dateB = b.termin.split('.').reverse().join('-');
-                    return new Date(dateB) - new Date(dateA);
-                })
-                .slice(0, 2);
+            const lastTwoAppointments = await getMostRecentAppointments(2);
                 
             if (lastTwoAppointments.length > 0) {
                 discordContent += `\n\n ### Aktuelle Termine zur Information:`;
@@ -94,9 +89,10 @@ async function checkFischerpruefung() {
         // Send Discord notification
         await sendDiscordAlert(discordContent, discordEmbeds);
 
-        // Combine known and new appointments for saving
-        const allAppointmentsToSave = [...knownAppointments, ...newAppointments];
-        await saveKnownAppointments(allAppointmentsToSave);
+        // Save the new appointments to the database
+        if (newAppointments.length > 0) {
+            await saveAppointments(newAppointments);
+        }
         log(`✅ ${newAppointments.length} neue Termine gefunden und ggf. gemeldet.`);
 
     } catch (error) {
