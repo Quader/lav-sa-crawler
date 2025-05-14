@@ -16,7 +16,7 @@ import {
 } from './modules/data/appointmentStorage.js';
 import { log } from './modules/logger/logger.js';
 
-const EXAM_TYPE_ID = 1; // Ersetze durch die tatsächliche ID der Fischerprüfung
+const EXAM_TYPE_ID = 1; // Replace with the actual fishing exam ID
 const LINK_URL = process.env.LINK_URL;
 
 async function checkFischerpruefung() {
@@ -26,7 +26,7 @@ async function checkFischerpruefung() {
         const fetchedRawData = await fetchExamData();
 
         if (!fetchedRawData) {
-            log('Fehler beim Abrufen der Prüfungsdaten. Der Prozess wird beendet.');
+            log('Error retrieving exam data. Process terminated.');
             return;
         }
 
@@ -44,31 +44,31 @@ async function checkFischerpruefung() {
         const newAppointments = await findNewAppointments(fetchedAppointments, knownAppointments);
         const alreadyNotifiedAppointments = await knownAppointments.filter(k => k.notified);
 
-        // Discord-Nachricht Vorbereitung
+        // Discord message preparation
         let discordContent = '';
         let discordEmbeds = [];
 
         if (newAppointments.length > 0) {
-            // Haupt-Nachrichtentext
-            discordContent = `# 🎣 ${newAppointments.length} neue Fischerprüfung-Termine gefunden!`;
+            // Main message text
+            discordContent = `\n\n\n\n ### 🎣 ${newAppointments.length} neue Termine gefunden!`;
             
-            // Erstelle für jeden neuen Termin ein Embed
+            // Create an embed for each new appointment
             newAppointments.forEach(appointment => {
                 discordEmbeds.push(createAppointmentEmbed(appointment, true));
             });
             
-            // Markiere die neuen Termine als benachrichtigt
+            // Mark the new appointments as notified
             for (const newAppointment of newAppointments) {
                 await markAsNotified(newAppointment.id, knownAppointments);
             }
         } else {
-            // Keine neuen Termine gefunden
-            discordContent = '# ℹ️ Keine neuen Fischerprüfung-Termine gefunden';
+            // No new appointments found
+            discordContent = `\n\n\n\n ### ℹ️ Keine neuen Termine gefunden`;
             
-            // Zeigt die letzten beiden Termine an, wenn keine neuen gefunden wurden
+            // Show the last two appointments when no new ones were found
             const lastTwoAppointments = [...fetchedAppointments]
                 .sort((a, b) => {
-                    // Konvertiere deutsche Datumsformate (DD.MM.YYYY) zu Date-Objekten für den Vergleich
+                    // Convert German date formats (DD.MM.YYYY) to Date objects for comparison
                     const dateA = a.termin.split('.').reverse().join('-');
                     const dateB = b.termin.split('.').reverse().join('-');
                     return new Date(dateB) - new Date(dateA);
@@ -76,32 +76,32 @@ async function checkFischerpruefung() {
                 .slice(0, 2);
                 
             if (lastTwoAppointments.length > 0) {
-                discordContent += '\n\nAktuelle Termine zur Information:';
+                discordContent += `\n\n ### Aktuelle Termine zur Information:`;
                 lastTwoAppointments.forEach(appointment => {
                     discordEmbeds.push(createAppointmentEmbed(appointment, false, 'info'));
                 });
             }
             
-            // Füge bereits gemeldete Termine hinzu, falls vorhanden
+            // Add already notified appointments, if any
             if (alreadyNotifiedAppointments.length > 0) {
-                discordContent += '\n\nBereits gemeldete Termine:';
+                discordContent += `\n\n ### Bereits gemeldete Termine:`;
                 alreadyNotifiedAppointments.forEach(appointment => {
                     discordEmbeds.push(createAppointmentEmbed(appointment, false, 'default'));
                 });
             }
         }
 
-        // Discord-Benachrichtigung senden
+        // Send Discord notification
         await sendDiscordAlert(discordContent, discordEmbeds);
 
-        // Kombiniere bekannte und neue Termine zum Speichern
+        // Combine known and new appointments for saving
         const allAppointmentsToSave = [...knownAppointments, ...newAppointments];
         await saveKnownAppointments(allAppointmentsToSave);
-        log(`✅ ${newAppointments.length} neue Fischerprüfung-Termine gefunden und ggf. gemeldet.`);
+        log(`✅ ${newAppointments.length} neue Termine gefunden und ggf. gemeldet.`);
 
     } catch (error) {
         log(`❌ Fehler beim Überprüfen der Fischerprüfung: ${error.message}`);
-        // Sende einen Fehler mit rotem Embed
+        // Send an error with red embed
         const errorEmbed = createStatusEmbed(
             'Fehler im Fischerprüfungs-Crawler', 
             `\`\`\`${error.message}\`\`\``, 
@@ -111,8 +111,8 @@ async function checkFischerpruefung() {
     }
 }
 
-// Zeitplan: täglich um 8:00 Uhr
+// Cron Job: daily at 8:00am
 schedule.scheduleJob('0 8 * * *', checkFischerpruefung);
 
-// Führt checkFischerpruefung beim Start aus
+// init
 checkFischerpruefung();
