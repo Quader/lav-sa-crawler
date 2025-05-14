@@ -5,7 +5,10 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "test": "node tests/appointment-storage.test.js",
+    "test:diagnostic": "node tests/diagnostic.test.js",
+    "test:all": "npm run test && npm run test:diagnostic"
   },
   "author": "Steven David <stevendavidmd@gmail.com>",
   "license": "ISC",
