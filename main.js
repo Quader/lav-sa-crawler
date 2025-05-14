@@ -18,36 +18,20 @@ import {
     pruneOldAppointments
 } from './modules/data/nedbAppointmentStorage.js';
 import { log } from './modules/logger/logger.js';
-import PerformanceMonitor from './modules/utils/performance.js';
 
 const EXAM_TYPE_ID = 1; // Replace with the actual fishing exam ID
 const LINK_URL = process.env.LINK_URL;
 
 async function checkFischerpruefung() {
-    // Start overall performance measurement
-    const endTotalMeasurement = PerformanceMonitor.measure('Total Execution');
-    
-    // Log initial memory usage
-    PerformanceMonitor.logMemoryUsage('Initial Memory');
-    
     try {
         // Initialize database
-        await PerformanceMonitor.measureAsync(
-            async () => await initializeAppointmentsCollection(),
-            'DB Initialize'
-        );
+        await initializeAppointmentsCollection();
         
         // Load known appointments
-        const knownAppointments = await PerformanceMonitor.measureAsync(
-            async () => await loadKnownAppointments(),
-            'DB Load Appointments'
-        );
+        const knownAppointments = await loadKnownAppointments();
         
         // Fetch exam data from API (with caching)
-        const fetchedRawData = await PerformanceMonitor.measureAsync(
-            async () => await fetchExamData(),
-            'API Fetch'
-        );
+        const fetchedRawData = await fetchExamData();
 
         if (!fetchedRawData) {
             log('Error retrieving exam data. Process terminated.');
@@ -55,7 +39,6 @@ async function checkFischerpruefung() {
         }
 
         // Process fetched data
-        const processingEnd = PerformanceMonitor.measure('Data Processing');
         const fetchedAppointments = fetchedRawData
             .filter(item => item.examType.id === EXAM_TYPE_ID)
             .map(item => ({
@@ -72,19 +55,12 @@ async function checkFischerpruefung() {
                 contactInfo: item.contactInfo,
                 additionalInformation: item.additionalInformation
             }));
-        processingEnd();
 
         // Find new appointments
-        const newAppointments = await PerformanceMonitor.measureAsync(
-            async () => await findNewAppointments(fetchedAppointments),
-            'Find New Appointments'
-        );
+        const newAppointments = await findNewAppointments(fetchedAppointments);
         
         // Get already notified appointments
-        const alreadyNotifiedAppointments = await PerformanceMonitor.measureAsync(
-            async () => await getNotifiedAppointments(),
-            'Get Notified Appointments'
-        );
+        const alreadyNotifiedAppointments = await getNotifiedAppointments();
 
         // Discord message preparation
         let discordContent = '';
@@ -136,31 +112,16 @@ async function checkFischerpruefung() {
         }
 
         // Send Discord notification
-        await PerformanceMonitor.measureAsync(
-            async () => await sendDiscordAlert(discordContent, discordEmbeds),
-            'Discord Notification'
-        );
+        await sendDiscordAlert(discordContent, discordEmbeds);
 
         // Save the new appointments to the database
         if (newAppointments.length > 0) {
-            await PerformanceMonitor.measureAsync(
-                async () => await saveAppointments(newAppointments),
-                'Save Appointments'
-            );
+            await saveAppointments(newAppointments);
         }
-        
-        // Log final memory usage
-        PerformanceMonitor.logMemoryUsage('Final Memory');
-        
-        // End total measurement
-        endTotalMeasurement();
         
         log(`✅ ${newAppointments.length} neue Termine gefunden und ggf. gemeldet.`);
 
     } catch (error) {
-        // End total measurement even on error
-        endTotalMeasurement();
-        
         log(`❌ Fehler beim Überprüfen der Fischerprüfung: ${error.message}`);
         // Send an error with red embed
         const errorEmbed = createStatusEmbed(
@@ -174,25 +135,14 @@ async function checkFischerpruefung() {
 
 // Database maintenance job: weekly on Sunday at 3:00am
 schedule.scheduleJob('0 3 * * 0', async () => {
-    const endMaintenance = PerformanceMonitor.measure('Database Maintenance');
-    PerformanceMonitor.logMemoryUsage('Maintenance Start Memory');
-    
     try {
         log('Running database maintenance...');
         
         // Prune old appointments
-        await PerformanceMonitor.measureAsync(
-            async () => await pruneOldAppointments(90), // Keep appointments for 90 days
-            'Prune Old Appointments'
-        );
-        
-        // Log memory after maintenance
-        PerformanceMonitor.logMemoryUsage('Maintenance End Memory');
-        endMaintenance();
+        await pruneOldAppointments(90); // Keep appointments for 90 days
         
         log('Database maintenance completed.');
     } catch (error) {
-        endMaintenance();
         log(`Error during database maintenance: ${error.message}`);
     }
 });
