@@ -28,7 +28,10 @@ const getDataFilePath = () => {
 // Collection for appointment data
 const appointmentsDb = new Datastore({ 
   filename: getDataFilePath(),
-  autoload: true 
+  autoload: true,
+  // Auto-compact the database every 24 hours
+  timestampData: true,
+  autocompactionInterval: 86400000 // 24 hours in milliseconds
 });
 
 // Promisify NeDB functions
@@ -46,6 +49,7 @@ const findAsync = promisify(appointmentsDb.find, appointmentsDb);
 const insertAsync = promisify(appointmentsDb.insert, appointmentsDb);
 const updateAsync = promisify(appointmentsDb.update, appointmentsDb);
 const countAsync = promisify(appointmentsDb.count, appointmentsDb);
+const removeAsync = promisify(appointmentsDb.remove, appointmentsDb);
 
 /**
  * Initialize the appointments collection
@@ -237,6 +241,44 @@ async function getMostRecentAppointments(limit = 2) {
   }
 }
 
+/**
+ * Remove old appointments from the database
+ * @param {Number} daysToKeep - Number of days to keep appointments for
+ * @returns {Boolean} Success status
+ */
+async function pruneOldAppointments(daysToKeep = 90) {
+  try {
+    // Calculate cutoff date
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    
+    // Find appointments to prune
+    const oldAppointments = await findAsync({
+      dateAdded: { $lt: cutoffDate }
+    });
+    
+    if (oldAppointments.length === 0) {
+      log(`No old appointments to prune`);
+      return true;
+    }
+    
+    // Remove old appointments
+    const result = await removeAsync({ 
+      dateAdded: { $lt: cutoffDate }
+    }, { multi: true });
+    
+    log(`Pruned ${result} old appointments older than ${daysToKeep} days`);
+    
+    // Force compaction after pruning
+    appointmentsDb.persistence.compactDatafile();
+    
+    return true;
+  } catch (error) {
+    log(`Error pruning old appointments: ${error.message}`);
+    return false;
+  }
+}
+
 // For backward compatibility
 const ensureDataFile = initializeAppointmentsCollection;
 const saveKnownAppointments = saveAppointments;
@@ -249,6 +291,7 @@ export {
   markAsNotified,
   getNotifiedAppointments,
   getMostRecentAppointments,
+  pruneOldAppointments,
   // Backward compatibility exports
   ensureDataFile,
   saveKnownAppointments

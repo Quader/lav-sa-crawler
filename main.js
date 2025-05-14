@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import schedule from 'node-schedule';
-import { fetchExamData } from './modules/api/apiClient.js';
+import { fetchExamData } from './modules/api/cachedApiClient.js';
 import { 
     sendDiscordAlert, 
     createAppointmentEmbed, 
@@ -14,7 +14,8 @@ import {
     findNewAppointments,
     markAsNotified,
     getNotifiedAppointments,
-    getMostRecentAppointments
+    getMostRecentAppointments,
+    pruneOldAppointments
 } from './modules/data/nedbAppointmentStorage.js';
 import { log } from './modules/logger/logger.js';
 
@@ -115,6 +116,17 @@ async function checkFischerpruefung() {
         await sendDiscordAlert(`🚨 Fehler aufgetreten`, [errorEmbed]);
     }
 }
+
+// Database maintenance job: weekly on Sunday at 3:00am
+schedule.scheduleJob('0 3 * * 0', async () => {
+    try {
+        log('Running database maintenance...');
+        await pruneOldAppointments(90); // Keep appointments for 90 days
+        log('Database maintenance completed.');
+    } catch (error) {
+        log(`Error during database maintenance: ${error.message}`);
+    }
+});
 
 // Cron Job: daily at 8:00am
 schedule.scheduleJob('0 8 * * *', checkFischerpruefung);
