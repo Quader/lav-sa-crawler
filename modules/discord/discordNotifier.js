@@ -1,5 +1,12 @@
-import { Discord } from '@penseapp/discord-notification';
+import { createRequire } from 'module';
 import { log } from '../logger/logger.js';
+
+// Create a require function for ES modules
+const require = createRequire(import.meta.url);
+
+// Require the discord-notification package
+const discordPackage = require('@penseapp/discord-notification');
+const DiscordNotification = discordPackage.DiscordNotification;
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
@@ -17,7 +24,7 @@ async function sendDiscordAlert(content, embeds = []) {
     }
 
     // Erstellt eine neue Discord-Instanz mit dem Webhook
-    const discord = new Discord({
+    const discord = new DiscordNotification({
         webhook: DISCORD_WEBHOOK_URL
     });
 
