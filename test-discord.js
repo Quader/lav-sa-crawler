@@ -1,5 +1,10 @@
 import 'dotenv/config';
-import { sendDiscordAlert, createAppointmentEmbed } from './modules/discord/discordNotifier.js';
+import { 
+    sendDiscordAlert, 
+    createAppointmentEmbed, 
+    createStatusEmbed, 
+    DISCORD_COLORS 
+} from './modules/discord/discordNotifier.js';
 import { log } from './modules/logger/logger.js';
 
 /**
@@ -22,7 +27,7 @@ async function testDiscordNotifier() {
         // Pause to avoid rate limits
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Test 2: Create an example appointment
+        // Test 2: Create an example appointment (success - green)
         log('Test 2: Senden eines Discord Embeds mit einem Beispiel-Termin...');
         const testAppointment = {
             id: 12345,
@@ -33,7 +38,7 @@ async function testDiscordNotifier() {
             url: 'https://example.com/12345'
         };
         
-        // Create the embed
+        // Create the embed - new appointments are always success/green
         const testEmbed = createAppointmentEmbed(testAppointment, true);
         
         // Print the embed for debugging
@@ -42,6 +47,22 @@ async function testDiscordNotifier() {
         // Send the embed
         const embedResult = await sendDiscordAlert('🧪 Test eines Embed-Formats', [testEmbed]);
         log(`Test 2 Ergebnis: ${embedResult ? 'Erfolgreich' : 'Fehlgeschlagen'}`);
+        
+        // Pause to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Test 3: Test all status embeds
+        log('Test 3: Testen aller Status-Embed-Typen...');
+        
+        const statusEmbeds = [
+            createStatusEmbed('Erfolgs-Nachricht', 'Diese Nachricht zeigt einen Erfolg an.', 'success'),
+            createStatusEmbed('Fehler-Nachricht', 'Diese Nachricht zeigt einen Fehler an.', 'error'),
+            createStatusEmbed('Warn-Nachricht', 'Diese Nachricht ist eine Warnung.', 'warning'),
+            createStatusEmbed('Info-Nachricht', 'Diese Nachricht ist eine Information.', 'info')
+        ];
+        
+        const statusResult = await sendDiscordAlert('🎨 Test der verschiedenen Status-Farben', statusEmbeds);
+        log(`Test 3 Ergebnis: ${statusResult ? 'Erfolgreich' : 'Fehlgeschlagen'}`);
         
     } catch (error) {
         log(`❌ Fehler beim Testen der Discord-Benachrichtigungen: ${error.message}`);

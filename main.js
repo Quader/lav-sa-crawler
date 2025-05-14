@@ -1,7 +1,12 @@
 import 'dotenv/config';
 import schedule from 'node-schedule';
 import { fetchExamData } from './modules/api/apiClient.js';
-import { sendDiscordAlert, createAppointmentEmbed } from './modules/discord/discordNotifier.js';
+import { 
+    sendDiscordAlert, 
+    createAppointmentEmbed, 
+    createStatusEmbed, 
+    DISCORD_COLORS 
+} from './modules/discord/discordNotifier.js';
 import {
     ensureDataFile,
     loadKnownAppointments,
@@ -73,7 +78,7 @@ async function checkFischerpruefung() {
             if (lastTwoAppointments.length > 0) {
                 discordContent += '\n\nAktuelle Termine zur Information:';
                 lastTwoAppointments.forEach(appointment => {
-                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 0x5865F2));
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 'info'));
                 });
             }
             
@@ -81,7 +86,7 @@ async function checkFischerpruefung() {
             if (alreadyNotifiedAppointments.length > 0) {
                 discordContent += '\n\nBereits gemeldete Termine:';
                 alreadyNotifiedAppointments.forEach(appointment => {
-                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 0x808080));
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, 'default'));
                 });
             }
         }
@@ -96,7 +101,13 @@ async function checkFischerpruefung() {
 
     } catch (error) {
         log(`❌ Fehler beim Überprüfen der Fischerprüfung: ${error.message}`);
-        await sendDiscordAlert(`🚨 Fehler im Fischerprüfungs-Crawler:\n\`\`\`${error.message}\`\`\``);
+        // Sende einen Fehler mit rotem Embed
+        const errorEmbed = createStatusEmbed(
+            'Fehler im Fischerprüfungs-Crawler', 
+            `\`\`\`${error.message}\`\`\``, 
+            'error'
+        );
+        await sendDiscordAlert(`🚨 Fehler aufgetreten`, [errorEmbed]);
     }
 }
 

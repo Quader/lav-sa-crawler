@@ -11,6 +11,15 @@ const DiscordNotification = discordPackage.DiscordNotification;
 
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
+// Standard Discord message colors
+const DISCORD_COLORS = {
+    SUCCESS: 0x57F287, // Green
+    ERROR: 0xED4245,   // Red
+    WARNING: 0xFEE75C, // Yellow
+    INFO: 0x5865F2,    // Blue
+    DEFAULT: 0x808080  // Gray
+};
+
 /**
  * Sendet eine Benachrichtigung über Discord mit verbesserten Formatierungsmöglichkeiten
  * 
@@ -69,16 +78,36 @@ async function sendDiscordAlert(content, embeds = []) {
  * 
  * @param {Object} appointment Der Termin
  * @param {boolean} isNew Ob es sich um einen neuen Termin handelt
- * @param {string|number} [color] Die Farbe des Embeds (entweder als Dezimalzahl oder als Hex-String ohne #)
+ * @param {string} [messageType='info'] Der Typ der Nachricht: 'success', 'error', 'warning', 'info', oder ein benutzerdefinierter Farbwert
  * @returns {Object} Discord Embed Objekt
  */
-function createAppointmentEmbed(appointment, isNew = false, color = 0x0099ff) {
+function createAppointmentEmbed(appointment, isNew = false, messageType = 'info') {
     const emoji = isNew ? '🆕' : '🎣';
     const title = `${emoji} Fischerprüfungstermin ${isNew ? '(NEU)' : ''}`;
     
-    // Für neue Termine eine andere Farbe verwenden (rot für neue Termine)
-    // Discord erwartet die Farbe als dezimale Zahl, nicht als Hex-String
-    const embedColor = isNew ? 0xE74C3C : color;
+    // Farbe basierend auf Nachrichtentyp oder benutzerdefiniertem Wert festlegen
+    let embedColor;
+    
+    if (typeof messageType === 'number') {
+        // Wenn eine Zahl übergeben wurde, verwende sie direkt als Farbwert
+        embedColor = messageType;
+    } else if (typeof messageType === 'string') {
+        // Konvertiere String zu Großbuchstaben für Vergleich mit DISCORD_COLORS
+        const colorType = messageType.toUpperCase();
+        
+        // Wähle Farbe basierend auf Nachrichtentyp oder Fallback auf INFO
+        if (isNew) {
+            // Neue Termine verwenden immer SUCCESS (grün)
+            embedColor = DISCORD_COLORS.SUCCESS;
+        } else if (DISCORD_COLORS[colorType]) {
+            embedColor = DISCORD_COLORS[colorType];
+        } else {
+            embedColor = DISCORD_COLORS.INFO;
+        }
+    } else {
+        // Fallback
+        embedColor = isNew ? DISCORD_COLORS.SUCCESS : DISCORD_COLORS.INFO;
+    }
     
     return {
         title: title,
@@ -110,4 +139,45 @@ function createAppointmentEmbed(appointment, isNew = false, color = 0x0099ff) {
     };
 }
 
-export { sendDiscordAlert, createAppointmentEmbed };
+/**
+ * Erstellt ein einfaches Status-Embed für Erfolgs-, Fehler- oder Infomeldungen
+ * 
+ * @param {string} title Der Titel des Embeds
+ * @param {string} message Die Nachricht im Embed
+ * @param {string} [type='info'] Der Typ der Nachricht: 'success', 'error', 'warning', 'info'
+ * @param {string} [footer='Fischerprüfungs-Crawler'] Text in der Fußzeile
+ * @returns {Object} Discord Embed Objekt
+ */
+function createStatusEmbed(title, message, type = 'info', footer = 'Fischerprüfungs-Crawler') {
+    // Setze das passende Emoji je nach Nachrichtentyp
+    let emoji;
+    switch(type.toLowerCase()) {
+        case 'success':
+            emoji = '✅';
+            break;
+        case 'error':
+            emoji = '❌';
+            break;
+        case 'warning':
+            emoji = '⚠️';
+            break;
+        default:
+            emoji = 'ℹ️';
+    }
+    
+    // Konvertiere Typ zu Großbuchstaben für DISCORD_COLORS
+    const colorType = type.toUpperCase();
+    const color = DISCORD_COLORS[colorType] || DISCORD_COLORS.INFO;
+    
+    return {
+        title: `${emoji} ${title}`,
+        description: message,
+        color: color,
+        footer: {
+            text: footer
+        },
+        timestamp: new Date().toISOString()
+    };
+}
+
+export { sendDiscordAlert, createAppointmentEmbed, createStatusEmbed, DISCORD_COLORS };
