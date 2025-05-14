@@ -8,3 +8,4 @@ Thumbs.db       # Windows spezifisch
 .idea/           # IntelliJ IDEA spezifische Einstellungen
 *.log            # Log-Dateien
 known-appointments.json
+crawler.log
