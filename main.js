@@ -37,7 +37,7 @@ async function checkFischerpruefung() {
             }));
 
         const newAppointments = await findNewAppointments(fetchedAppointments, knownAppointments);
-        const alreadyNotifiedAppointments = knownAppointments.filter(k => k.notified);
+        const alreadyNotifiedAppointments = await knownAppointments.filter(k => k.notified);
 
         let discordMessage = '';
 
@@ -79,3 +79,5 @@ schedule.scheduleJob('* * * * *', checkFischerpruefung);
 
 // Führt checkFischerpruefung alle 30 Sekunden aus (30000 Millisekunden)
 // setInterval(checkFischerpruefung, 30000); 
+
+checkFischerpruefung();

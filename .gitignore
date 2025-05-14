@@ -7,3 +7,4 @@ Thumbs.db       # Windows spezifisch
 .vscode/         # VS Code spezifische Einstellungen
 .idea/           # IntelliJ IDEA spezifische Einstellungen
 *.log            # Log-Dateien
+known-appointments.json
