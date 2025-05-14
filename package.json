@@ -2,10 +2,10 @@
   "name": "lav-crawler",
   "version": "1.0.0",
   "description": "Webcrawler für Fischerprüfungstermine in Sachsen-Anhalt",
-  "main": "crawler.js",
+  "main": "main.js",
   "type": "module",
   "scripts": {
-    "start": "node crawler.js"
+    "start": "node main.js"
   },
   "author": "Steven David <stevendavidmd@gmail.com>",
   "license": "ISC",
