@@ -135,16 +135,20 @@ function createAppointmentEmbed(appointment, isNew = false, messageType = 'info'
         }
     ];
     
-    // Add detailed address if available
+    // Add detailed address if available (compact, single line)
     if (appointment.address || appointment.contactInfo?.address) {
+        const address = appointment.address || appointment.contactInfo?.address || '';
+        // Convert multi-line address to single line with commas
+        const compactAddress = address.replace(/\n/g, ', ').replace(/,\s*,/g, ',');
+        
         fields.push({
             name: '🗺️ Adresse',
-            value: appointment.address || appointment.contactInfo?.address || 'Keine Angabe',
+            value: compactAddress || 'Keine Angabe',
             inline: true
         });
     }
     
-    // Add contact information if available
+    // Add contact information if available (more compact)
     const contact = appointment.contactInfo?.contact || {};
     const contactFields = [];
     
@@ -163,22 +167,22 @@ function createAppointmentEmbed(appointment, isNew = false, messageType = 'info'
     if (contactFields.length > 0) {
         fields.push({
             name: '📬 Kontakt',
-            value: contactFields.join('\n'),
+            value: contactFields.join(' | '), // Use horizontal separator for compact display
             inline: true
         });
     }
     
-    // Add additional information if available
+    // Add additional information if available (more compact)
     if (appointment.additionalInfo || appointment.additionalInformation) {
         const additionalInfo = appointment.additionalInfo || appointment.additionalInformation;
         
-        // Limit additional info to 1024 characters (Discord limit for field value)
-        const limitedInfo = additionalInfo.length > 1020 
-            ? additionalInfo.substring(0, 1020) + '...' 
+        // Limit additional info to a more compact size (250 characters)
+        const limitedInfo = additionalInfo.length > 250
+            ? additionalInfo.substring(0, 250) + '...' 
             : additionalInfo;
             
         fields.push({
-            name: 'ℹ️ Weitere Informationen',
+            name: 'ℹ️ Hinweise',
             value: limitedInfo || 'Keine weiteren Informationen',
             inline: false
         });
