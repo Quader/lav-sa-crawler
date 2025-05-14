@@ -60,11 +60,17 @@ async function checkFischerpruefung() {
             .filter(item => item.examType.id === EXAM_TYPE_ID)
             .map(item => ({
                 id: item.id,
+                date: item.date, // Keep the original date for processing
                 termin: new Date(item.date).toLocaleDateString('de-DE'),
                 pruefungsstelle: item.examinationOffice.name,
                 pruefungsort: item.contactInfo.area.name,
                 landkreis: item.contactInfo.area.districtName,
-                url: LINK_URL + `${item.id}`
+                url: LINK_URL + `${item.id}`,
+                // Add original objects for enhanced storage
+                examType: item.examType,
+                examinationOffice: item.examinationOffice,
+                contactInfo: item.contactInfo,
+                additionalInformation: item.additionalInformation
             }));
         processingEnd();
 

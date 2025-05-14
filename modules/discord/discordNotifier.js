@@ -109,29 +109,86 @@ function createAppointmentEmbed(appointment, isNew = false, messageType = 'info'
         embedColor = isNew ? DISCORD_COLORS.SUCCESS : DISCORD_COLORS.INFO;
     }
     
+    // Get additional information fields from the enhanced appointment object
+    const fields = [
+        {
+            name: '📅 Termin',
+            value: `${appointment.termin || 'Kein Datum'} ${appointment.formattedTime ? `um ${appointment.formattedTime} Uhr` : ''}`,
+            inline: true
+        },
+        {
+            name: '🧾 Prüfungstyp',
+            value: appointment.examTypeName || appointment.examType?.name || 'Keine Angabe',
+            inline: true
+        },
+        {
+            name: '🏢 Prüfungsstelle',
+            value: appointment.pruefungsstelle || appointment.officeName || 'Keine Angabe',
+            inline: true
+        },
+        {
+            name: '📍 Ort',
+            value: appointment.pruefungsort ? 
+                   `${appointment.pruefungsort}${appointment.landkreis ? ` (${appointment.landkreis})` : ''}` :
+                   'Keine Ortsangabe',
+            inline: true
+        }
+    ];
+    
+    // Add detailed address if available
+    if (appointment.address || appointment.contactInfo?.address) {
+        fields.push({
+            name: '🗺️ Adresse',
+            value: appointment.address || appointment.contactInfo?.address || 'Keine Angabe',
+            inline: true
+        });
+    }
+    
+    // Add contact information if available
+    const contact = appointment.contactInfo?.contact || {};
+    const contactFields = [];
+    
+    if (contact.phone) {
+        contactFields.push(`📞 ${contact.phone}`);
+    }
+    
+    if (contact.email) {
+        contactFields.push(`📧 ${contact.email}`);
+    }
+    
+    if (contact.website) {
+        contactFields.push(`🌐 [Website](${contact.website})`);
+    }
+    
+    if (contactFields.length > 0) {
+        fields.push({
+            name: '📬 Kontakt',
+            value: contactFields.join('\n'),
+            inline: true
+        });
+    }
+    
+    // Add additional information if available
+    if (appointment.additionalInfo || appointment.additionalInformation) {
+        const additionalInfo = appointment.additionalInfo || appointment.additionalInformation;
+        
+        // Limit additional info to 1024 characters (Discord limit for field value)
+        const limitedInfo = additionalInfo.length > 1020 
+            ? additionalInfo.substring(0, 1020) + '...' 
+            : additionalInfo;
+            
+        fields.push({
+            name: 'ℹ️ Weitere Informationen',
+            value: limitedInfo || 'Keine weiteren Informationen',
+            inline: false
+        });
+    }
+
     return {
         title: title,
         url: appointment.url,
         color: embedColor,
-        fields: [
-            {
-                name: '📅 Termin',
-                value: appointment.termin || 'Kein Datum angegeben',
-                inline: true
-            },
-            {
-                name: '🏢 Prüfungsstelle',
-                value: appointment.pruefungsstelle || 'Keine Angabe',
-                inline: true
-            },
-            {
-                name: '📍 Ort',
-                value: appointment.pruefungsort ? 
-                       `${appointment.pruefungsort}${appointment.landkreis ? ` (${appointment.landkreis})` : ''}` :
-                       'Keine Ortsangabe',
-                inline: true
-            }
-        ],
+        fields: fields,
         footer: {
             text: 'Fischerprüfungs-Crawler'
         },

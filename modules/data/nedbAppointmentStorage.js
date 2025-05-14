@@ -153,11 +153,28 @@ async function findNewAppointments(fetchedAppointments) {
     // Filter out appointments that already exist
     const newAppointments = fetchedAppointments.filter(
       appointment => !existingIds.includes(appointment.id)
-    ).map(appointment => ({
-      ...appointment,
-      notified: false,
-      dateAdded: new Date()
-    }));
+    ).map(appointment => {
+      // Format date in a user-friendly way
+      const appointmentDate = new Date(appointment.date);
+      const formattedDate = appointmentDate.toLocaleDateString('de-DE');
+      const formattedTime = appointmentDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      
+      return {
+        ...appointment,
+        notified: false,
+        dateAdded: new Date(),
+        // Add enhanced date information
+        formattedDate,
+        formattedTime,
+        isoDate: appointmentDate.toISOString(),
+        // Extract important nested information to top level
+        examTypeName: appointment.examType?.name || 'Unbekannt',
+        officeName: appointment.examinationOffice?.name || 'Unbekannt',
+        address: appointment.contactInfo?.address || '',
+        contactInfo: appointment.contactInfo?.contact || {},
+        additionalInfo: appointment.additionalInformation || ''
+      };
+    });
 
     log(`Found ${newAppointments.length} new appointments`);
     return newAppointments;
