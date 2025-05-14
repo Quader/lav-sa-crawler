@@ -42,7 +42,9 @@ The application is structured in a modular way:
    - Save updated appointment list
    - Log all operations (`logger.js`)
 
-4. **Data Storage**: Appointments are stored in a JSON file (`known-appointments.json`) to maintain state between runs.
+4. **Data Storage**: 
+   - Appointments are stored in a NeDB database (`appointments.db`) for persistence without requiring a separate database server.
+   - NeDB provides a MongoDB-like API with a lightweight file-based storage system.
 
 ## Environment Configuration
 
@@ -51,11 +53,19 @@ The application requires the following environment variables in a `.env` file:
 ```
 DISCORD_WEBHOOK_URL=your_discord_webhook_url_here
 API_URL=https://fischerpruefung.sachsen-anhalt.de/api/exam/examination?future=true
-DATA_FILE_PATH=./known-appointments.json
 LOG_FILE_PATH=./crawler.log
 LINK_URL=base_url_for_appointment_links
+DATA_DIR=./data    # Optional: custom directory for NeDB storage
 ```
 
 ## Docker Support
 
-The application can be containerized using Docker, with persistent volume storage for the data files. This ensures that appointment data persists between container restarts or updates.
+The application can be containerized using Docker, with persistent volume storage for the data files.
+
+The Docker setup includes:
+- A single Docker container for the application
+- Volume for persisting appointment data in the NeDB database file
+- Simple configuration with Docker Compose
+- Automatic database maintenance and optimization
+
+These Docker configurations ensure that appointment data persists between container restarts or updates.

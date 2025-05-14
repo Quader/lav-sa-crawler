@@ -8,9 +8,9 @@ Der Bot führt folgende Schritte aus:
 
 1.  Ruft die Daten von der angegebenen API-URL ab.
 2.  Filtert die Ergebnisse nach Terminen für die "Fischerprüfung".
-3.  Vergleicht die gefundenen Termine mit einer lokalen Liste bekannter Termine (`known-appointments.json`).
+3.  Vergleicht die gefundenen Termine mit den in der NeDB-Datenbank gespeicherten Terminen.
 4.  Sendet eine Benachrichtigung über Discord, wenn neue Termine gefunden wurden.
-5.  Speichert die neuen Termine in der lokalen Liste.
+5.  Speichert die neuen Termine in der Datenbank.
 6.  Protokolliert seine Aktivitäten in einer `crawler.log`-Datei.
 7.  Wiederholt diese Überprüfung täglich um 8:00 Uhr.
 
@@ -35,8 +35,8 @@ Der Bot führt folgende Schritte aus:
         ```
         DISCORD_WEBHOOK_URL=deine_discord_webhook_url_hier
         API_URL=[https://fischerpruefung.sachsen-anhalt.de/api/exam/examination?future=true](https://fischerpruefung.sachsen-anhalt.de/api/exam/examination?future=true)
-        DATA_FILE_PATH=./known-appointments.json
         LOG_FILE_PATH=./crawler.log
+        LINK_URL=https://fischerpruefung.sachsen-anhalt.de/exam/
         ```
 
         **Wichtig:** Ersetze `deine_discord_webhook_url_hier` durch die tatsächliche URL deines Discord-Webhooks.
@@ -60,7 +60,7 @@ Der Bot führt folgende Schritte aus:
 * Nach der Einrichtung (entweder direkt mit Node.js oder über Docker) läuft der Bot automatisch im Hintergrund und überprüft täglich um 8:00 Uhr nach neuen Fischerprüfungsterminen.
 * Benachrichtigungen werden über den konfigurierten Discord-Webhook versendet.
 * Die Log-Datei (`crawler.log`) enthält Informationen über die Ausführung des Bots.
-* Die Datei `known-appointments.json` speichert die bereits bekannten Termine. **Lösche diese Datei nicht, es sei denn, du möchtest alle Termine erneut als "neu" behandeln.**
+* Alle Termine werden in der NeDB-Datenbank gespeichert und bleiben auch nach Neustarts erhalten.
 
 ## Konfiguration
 
@@ -68,8 +68,8 @@ Die wichtigsten Konfigurationen erfolgen über die `.env`-Datei:
 
 * `DISCORD_WEBHOOK_URL`: Die URL deines Discord-Webhooks.
 * `API_URL`: Die URL der API für die Fischerprüfungstermine (Standardmäßig voreingestellt).
-* `DATA_FILE_PATH`: Der Pfad zur Datei, in der bekannte Termine gespeichert werden (Standardmäßig `./known-appointments.json`).
 * `LOG_FILE_PATH`: Der Pfad zur Log-Datei (Standardmäßig `./crawler.log`).
+* `LINK_URL`: Der Basis-Link für die Detailseite der Termine.
 
 ## Zukünftige Erweiterungen (Ideen)
 
@@ -77,6 +77,9 @@ Die wichtigsten Konfigurationen erfolgen über die `.env`-Datei:
 * Optionale Benachrichtigungen für geänderte oder abgesagte Termine.
 * Integration weiterer Informationsquellen.
 * Eine webbasierte Oberfläche zur Verwaltung der Einstellungen.
+* Erweiterte Datenbankfunktionen (z.B. Filtermöglichkeiten, Statistiken).
+* API-Endpunkte zum Abrufen der gespeicherten Termine.
+* Datenbankverwaltungsoberfläche für gespeicherte Termine.
 
 ## Lizenz
 
