@@ -7,5 +7,24 @@ Thumbs.db       # Windows spezifisch
 .vscode/         # VS Code spezifische Einstellungen
 .idea/           # IntelliJ IDEA spezifische Einstellungen
 *.log            # Log-Dateien
+
+# Database files
 known-appointments.json
 crawler.log
+data/
+*.db
+*.db.backup-*
+
+# Cache files
+cache/
+api-response-full.json
+test-api-response.js
+apiResponseTest.js
+
+# Old MongoDB files
+modules/data/mongoAppointmentStorage.js
+modules/data/mongoConnection.js
+tests/mongo-appointment-storage.test.js
+tests/mongo-appointment-storage.mock.test.js
+migrate-to-mongodb.js
+main.js.mongodb
