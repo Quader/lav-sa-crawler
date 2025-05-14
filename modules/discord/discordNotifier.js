@@ -1,10 +1,11 @@
 import { createRequire } from 'module';
 import { log } from '../logger/logger.js';
+import fetch from 'node-fetch';
 
 // Create a require function for ES modules
 const require = createRequire(import.meta.url);
 
-// Require the discord-notification package
+// Require the discord-notification package and examine it
 const discordPackage = require('@penseapp/discord-notification');
 const DiscordNotification = discordPackage.DiscordNotification;
 
@@ -23,21 +24,28 @@ async function sendDiscordAlert(content, embeds = []) {
         return false;
     }
 
-    // Erstellt eine neue Discord-Instanz mit dem Webhook
-    const discord = new DiscordNotification({
-        webhook: DISCORD_WEBHOOK_URL
-    });
-
     try {
-        // Wenn Embeds vorhanden sind, verwenden wir diese
-        if (embeds.length > 0) {
-            await discord.send({ 
-                embeds,
-                content: content || undefined  // Optionaler Haupttext
-            });
-        } else {
-            // Ansonsten nur den Textinhalt senden
-            await discord.send({ content });
+        // Bereite Payload vor
+        const payload = {
+            content: content
+        };
+
+        // Füge Embeds hinzu, wenn vorhanden
+        if (embeds && embeds.length > 0) {
+            payload.embeds = embeds;
+        }
+
+        // Sende direkt an Discord-Webhook
+        const response = await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Discord API responded with status: ${response.status}`);
         }
         
         log('✅ Discord-Benachrichtigung erfolgreich gesendet.');
