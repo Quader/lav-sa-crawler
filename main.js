@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import schedule from 'node-schedule';
 import { fetchExamData } from './modules/api/apiClient.js';
-import { sendDiscordAlert } from './modules/discord/discordNotifier.js';
+import { sendDiscordAlert, createAppointmentEmbed } from './modules/discord/discordNotifier.js';
 import {
     ensureDataFile,
     loadKnownAppointments,
@@ -39,25 +39,26 @@ async function checkFischerpruefung() {
         const newAppointments = await findNewAppointments(fetchedAppointments, knownAppointments);
         const alreadyNotifiedAppointments = await knownAppointments.filter(k => k.notified);
 
-        let discordMessage = '';
-
-        // Hilfsfunktion zum Formatieren eines einzelnen Termins mit Rahmen
-        const formatAppointment = (appointment, isNew = false) => {
-            const emoji = isNew ? '🆕' : '🎣';
-            return `\`\`\`\n┌─────────────────────────────────────────\n│ ${emoji} Fischerprüfungstermin\n├─────────────────────────────────────────\n│ 📅 Termin: ${appointment.termin}\n│ 🏢 Prüfungsstelle: ${appointment.pruefungsstelle}\n│ 📍 Ort: ${appointment.pruefungsort} (${appointment.landkreis})\n│ 🔗 Link: ${appointment.url}\n└─────────────────────────────────────────\n\`\`\``;
-        };
+        // Discord-Nachricht Vorbereitung
+        let discordContent = '';
+        let discordEmbeds = [];
 
         if (newAppointments.length > 0) {
-            discordMessage += `🎣 **Neue Fischerprüfung-Termine gefunden!**\n\n`;
+            // Haupt-Nachrichtentext
+            discordContent = `# 🎣 ${newAppointments.length} neue Fischerprüfung-Termine gefunden!`;
             
-            // Neue Termine mit speziellem Format und "Neu" Kennzeichnung
-            discordMessage += newAppointments.map(t => formatAppointment(t, true)).join('\n');
+            // Erstelle für jeden neuen Termin ein Embed
+            newAppointments.forEach(appointment => {
+                discordEmbeds.push(createAppointmentEmbed(appointment, true));
+            });
             
+            // Markiere die neuen Termine als benachrichtigt
             for (const newAppointment of newAppointments) {
                 await markAsNotified(newAppointment.id, knownAppointments);
             }
         } else {
-            discordMessage += 'ℹ️ **Keine neuen Fischerprüfung-Termine gefunden.**\n\n';
+            // Keine neuen Termine gefunden
+            discordContent = '# ℹ️ Keine neuen Fischerprüfung-Termine gefunden';
             
             // Zeigt die letzten beiden Termine an, wenn keine neuen gefunden wurden
             const lastTwoAppointments = [...fetchedAppointments]
@@ -70,19 +71,23 @@ async function checkFischerpruefung() {
                 .slice(0, 2);
                 
             if (lastTwoAppointments.length > 0) {
-                discordMessage += `**Aktuelle Termine zur Information:**\n\n`;
-                discordMessage += lastTwoAppointments.map(t => formatAppointment(t)).join('\n');
-                discordMessage += '\n\n';
+                discordContent += '\n\nAktuelle Termine zur Information:';
+                lastTwoAppointments.forEach(appointment => {
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, '5865f2'));
+                });
+            }
+            
+            // Füge bereits gemeldete Termine hinzu, falls vorhanden
+            if (alreadyNotifiedAppointments.length > 0) {
+                discordContent += '\n\nBereits gemeldete Termine:';
+                alreadyNotifiedAppointments.forEach(appointment => {
+                    discordEmbeds.push(createAppointmentEmbed(appointment, false, '808080'));
+                });
             }
         }
 
-        if (alreadyNotifiedAppointments.length > 0) {
-            discordMessage += `**Bereits gemeldete Termine:**\n\n`;
-            discordMessage += alreadyNotifiedAppointments.map(t => formatAppointment(t)).join('\n');
-        } else {
-            log('ℹ️ Keine neuen Termine und keine bereits gemeldeten Termine gefunden.');
-        }
-        await sendDiscordAlert(discordMessage);
+        // Discord-Benachrichtigung senden
+        await sendDiscordAlert(discordContent, discordEmbeds);
 
         // Kombiniere bekannte und neue Termine zum Speichern
         const allAppointmentsToSave = [...knownAppointments, ...newAppointments];
@@ -96,9 +101,7 @@ async function checkFischerpruefung() {
 }
 
 // Zeitplan: täglich um 8:00 Uhr
-schedule.scheduleJob('* * * * *', checkFischerpruefung);
+schedule.scheduleJob('0 8 * * *', checkFischerpruefung);
 
-// Führt checkFischerpruefung alle 30 Sekunden aus (30000 Millisekunden)
-// setInterval(checkFischerpruefung, 30000); 
-
+// Führt checkFischerpruefung beim Start aus
 checkFischerpruefung();
